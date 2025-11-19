@@ -123,6 +123,7 @@ app.get('/api/products/:id', async (req, res) => {
 const handleProductData = (req, res, next) => {
   // If Content-Type is JSON, skip file upload and go to next handler
   if (req.is('application/json')) {
+    console.log('Received JSON request, body:', req.body);
     return next();
   }
   // Otherwise try to handle file upload
