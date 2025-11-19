@@ -119,7 +119,17 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-app.post('/api/products', upload.single('image'), async (req, res) => {
+// Middleware to handle both JSON and FormData
+const handleProductData = (req, res, next) => {
+  // If Content-Type is JSON, skip file upload and go to next handler
+  if (req.is('application/json')) {
+    return next();
+  }
+  // Otherwise try to handle file upload
+  upload.single('image')(req, res, next);
+};
+
+app.post('/api/products', handleProductData, async (req, res) => {
   try {
     const { name, description, price, image } = req.body;
     // Accept either file upload or image URL
@@ -130,7 +140,7 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-app.put('/api/products/:id', upload.single('image'), async (req, res) => {
+app.put('/api/products/:id', handleProductData, async (req, res) => {
   try {
     const id = req.params.id;
     const { name, description, price, image } = req.body;
@@ -230,3 +240,4 @@ app.get('*', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, ()=> console.log('Server running on', PORT));
+
