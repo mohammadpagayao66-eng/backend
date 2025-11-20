@@ -132,10 +132,11 @@ const handleProductData = (req, res, next) => {
 
 app.post('/api/products', handleProductData, async (req, res) => {
   try {
-    const { name, description, price, image } = req.body;
-    // Accept either file upload or image URL
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : (image || null);
-    const p = new Product({ name, description, price: Number(price || 0), imageUrl });
+   const { name, description, price, image, imageUrl } = req.body;
+    // Accept both 'image' and 'imageUrl' field names
+    const finalImageUrl = req.file ? `/uploads/${req.file.filename}` : (imageUrl || image || null);
+    console.log('Creating product:', { name, price, imageUrl: finalImageUrl, hasFile: !!req.file });
+    const p = new Product({ name, description, price: Number(price || 0), imageUrl: finalImageUrl });
     await p.save();
     res.json(p);
   } catch (err) { res.status(500).json({ message: err.message }); }
@@ -144,11 +145,13 @@ app.post('/api/products', handleProductData, async (req, res) => {
 app.put('/api/products/:id', handleProductData, async (req, res) => {
   try {
     const id = req.params.id;
-    const { name, description, price, image } = req.body;
+    const { name, description, price, image, imageUrl } = req.body;
     const update = { name, description, price: Number(price || 0) };
     // Accept either file upload or image URL
     if (req.file) {
       update.imageUrl = `/uploads/${req.file.filename}`;
+        } else if (imageUrl) {
+      update.imageUrl = imageUrl;
     } else if (image) {
       update.imageUrl = image;
     }
