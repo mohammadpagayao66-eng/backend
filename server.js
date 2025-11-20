@@ -132,7 +132,7 @@ const handleProductData = (req, res, next) => {
 
 app.post('/api/products', handleProductData, async (req, res) => {
   try {
-   const { name, description, price, image, imageUrl } = req.body;
+  const { name, description, price, image, imageUrl } = req.body;
     // Accept both 'image' and 'imageUrl' field names
     const finalImageUrl = req.file ? `/uploads/${req.file.filename}` : (imageUrl || image || null);
     console.log('Creating product:', { name, price, imageUrl: finalImageUrl, hasFile: !!req.file });
