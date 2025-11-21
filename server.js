@@ -132,32 +132,62 @@ const handleProductData = (req, res, next) => {
 
 app.post('/api/products', handleProductData, async (req, res) => {
   try {
-  const { name, description, price, image, imageUrl } = req.body;
+    const { name, description, price, image, imageUrl } = req.body;
     // Accept both 'image' and 'imageUrl' field names
-    const finalImageUrl = req.file ? `/uploads/${req.file.filename}` : (imageUrl || image || null);
-    console.log('Creating product:', { name, price, imageUrl: finalImageUrl, hasFile: !!req.file });
-    const p = new Product({ name, description, price: Number(price || 0), imageUrl: finalImageUrl });
+    // Priority: uploaded file > imageUrl > image field > null
+    let finalImageUrl = null;
+    if (req.file) {
+      finalImageUrl = `/uploads/${req.file.filename}`;
+    } else if (imageUrl && imageUrl.trim()) {
+      finalImageUrl = imageUrl.trim();
+    } else if (image && image.trim()) {
+      finalImageUrl = image.trim();
+    }
+    
+    console.log('Creating product:', { name, price, imageUrl: finalImageUrl, hasFile: !!req.file, receivedImageUrl: imageUrl, receivedImage: image });
+    const p = new Product({ 
+      name: (name || '').trim(), 
+      description: (description || '').trim(), 
+      price: Number(price || 0), 
+      imageUrl: finalImageUrl 
+    });
     await p.save();
+    console.log('Product saved:', p);
     res.json(p);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { 
+    console.error('Error creating product:', err);
+    res.status(500).json({ message: err.message }); 
+  }
 });
 
 app.put('/api/products/:id', handleProductData, async (req, res) => {
   try {
     const id = req.params.id;
     const { name, description, price, image, imageUrl } = req.body;
-    const update = { name, description, price: Number(price || 0) };
-    // Accept either file upload or image URL
+    const update = { 
+      name: (name || '').trim(), 
+      description: (description || '').trim(), 
+      price: Number(price || 0) 
+    };
+    // Accept both 'image' and 'imageUrl' field names, only update if provided
     if (req.file) {
       update.imageUrl = `/uploads/${req.file.filename}`;
-        } else if (imageUrl) {
-      update.imageUrl = imageUrl;
-    } else if (image) {
-      update.imageUrl = image;
+      console.log('Updating product with file upload:', update.imageUrl);
+    } else if (imageUrl && imageUrl.trim()) {
+      update.imageUrl = imageUrl.trim();
+      console.log('Updating product with imageUrl:', update.imageUrl);
+    } else if (image && image.trim()) {
+      update.imageUrl = image.trim();
+      console.log('Updating product with image:', update.imageUrl);
     }
+    // Note: if none of the above, imageUrl is not updated (preserves existing)
     const p = await Product.findByIdAndUpdate(id, update, { new: true });
+    console.log('Product updated:', p);
     res.json(p);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { 
+    console.error('Error updating product:', err);
+    res.status(500).json({ message: err.message }); 
+  }
 });
 
 app.delete('/api/products/:id', async (req, res) => {
